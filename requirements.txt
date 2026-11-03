@@ -1,0 +1,5 @@
+playwright>=1.48
+google-api-python-client>=2.150
+google-auth-oauthlib>=1.2
+keyring>=25.0
+tzdata>=2024.2

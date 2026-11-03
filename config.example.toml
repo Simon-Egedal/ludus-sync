@@ -1,0 +1,22 @@
+# Kopiér til config.toml og udfyld.
+
+# Forsiden/login-siden til din skoles Ludus Web
+ludus_url = "https://DIN-SKOLE.ludus.dk/"
+username = "dit-ludus-brugernavn"
+
+# Kalender-ID fra Google Kalender (Indstillinger → kalenderen → "Kalender-id"), eller "primary".
+# Scriptet rører kun begivenheder det selv har oprettet, og springer moduler over
+# der overlapper noget der allerede står i kalenderen.
+calendar_id = "primary"
+timezone = "Europe/Copenhagen"
+weeks_ahead = 5
+
+# Google-farver: 3 = Drue (lilla), 1 = Lavendel. Tom = kalenderens standardfarve.
+study_color_id = "3"
+normal_color_id = ""
+
+# Moduler hvis titel/status indeholder disse ord bliver fjernet / farvet lilla
+cancelled_keywords = ["aflyst"]
+# Moduler/begivenheder med disse ord kommer slet ikke i kalenderen
+skip_keywords = ["frivillig lektiecafe"]
+study_keywords = ["studietid", "studietime", "studiecafé", "studiecafe", "lektiecafé"]

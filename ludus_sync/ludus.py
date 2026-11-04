@@ -29,6 +29,8 @@ WEEK_JS = r"""() => {
       left: w.style.left,
       right: w.style.right,
       labels: [...el.querySelectorAll('.v-label')].map(l => l.innerText.trim()),
+      struck: [...el.querySelectorAll('.v-label')].map(l =>
+        getComputedStyle(l).textDecorationLine.includes('line-through')),
       text: el.innerText.trim(),
     };
   });
@@ -261,6 +263,12 @@ def parse_week(raw: dict, tz: ZoneInfo) -> list[Lesson]:
         if room.lower().startswith("studietime"):
             status = status or "Studietime"
             room = room[len("studietime"):].strip()
+        # A changed lesson whose teacher is struck through has no teacher: it's a study hour.
+        struck = block.get("struck") or []
+        teacher_idx = t + 3
+        if not status and teacher and teacher_idx < len(struck) and struck[teacher_idx]:
+            status = "Studietime"
+            teacher = f"{teacher} (fraværende)"
 
         lessons.append(Lesson(
             title=title,

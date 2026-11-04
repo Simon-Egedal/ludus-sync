@@ -95,26 +95,26 @@ def _list_events(service, calendar_id: str, start: datetime | None, end: datetim
             return events
 
 
-def _is_synced(ev: dict) -> bool:
-    return ev.get("extendedProperties", {}).get("private", {}).get(SYNC_TAG) == "1"
+def _is_synced(ev: dict, tag: str = SYNC_TAG) -> bool:
+    return ev.get("extendedProperties", {}).get("private", {}).get(tag) == "1"
 
 
-def remove_synced_events(service, calendar_id: str) -> int:
-    """Delete every event this tool ever created in `calendar_id` (used when switching calendars)."""
-    events = _list_events(service, calendar_id, None, None, privateExtendedProperty=f"{SYNC_TAG}=1")
-    events = [ev for ev in events if _is_synced(ev)]
+def remove_synced_events(service, calendar_id: str, tag: str = SYNC_TAG) -> int:
+    """Delete every event tagged `tag` in `calendar_id` (used when switching calendars)."""
+    events = _list_events(service, calendar_id, None, None, privateExtendedProperty=f"{tag}=1")
+    events = [ev for ev in events if _is_synced(ev, tag)]
     for ev in events:
         service.events().delete(calendarId=calendar_id, eventId=ev["id"]).execute()
-    log.info("Fjernede %d gamle Ludus-begivenheder fra %s", len(events), calendar_id)
+    log.info("Fjernede %d gamle %s-begivenheder fra %s", len(events), tag, calendar_id)
     return len(events)
 
 
-def _busy_slots(events: list[dict]) -> list[tuple[datetime, datetime]]:
-    """Timed events not created by this tool; lessons overlapping them are left out."""
+def _busy_slots(events: list[dict], tag: str = SYNC_TAG) -> list[tuple[datetime, datetime]]:
+    """Timed events not tagged `tag`; synced items overlapping them are left out."""
     return [
         (datetime.fromisoformat(ev["start"]["dateTime"]), datetime.fromisoformat(ev["end"]["dateTime"]))
         for ev in events
-        if not _is_synced(ev) and "dateTime" in ev.get("start", {}) and ev.get("status") != "cancelled"
+        if not _is_synced(ev, tag) and "dateTime" in ev.get("start", {}) and ev.get("status") != "cancelled"
     ]
 
 
@@ -148,26 +148,34 @@ def sync(service, cfg: Config, lessons: list[Lesson], window_start: datetime, wi
             continue
         desired[lesson.key] = event_body(lesson, kind, cfg)
 
+    apply_desired(service, cfg.calendar_id, events, desired, result, SYNC_TAG, "ludus_key")
+    log.info("Google Kalender: %s", result)
+    return result
+
+
+def apply_desired(
+    service, calendar_id: str, events: list[dict], desired: dict[str, dict], result: SyncResult, tag: str, key_prop: str
+):
+    """Make the events tagged `tag` among `events` match `desired` (keyed by `key_prop`)."""
     existing: dict[str, dict] = {}
-    for ev in filter(_is_synced, events):
-        key = ev.get("extendedProperties", {}).get("private", {}).get("ludus_key")
+    for ev in events:
+        if not _is_synced(ev, tag):
+            continue
+        key = ev.get("extendedProperties", {}).get("private", {}).get(key_prop)
         if key in desired and key not in existing:
             existing[key] = ev
         else:
-            # Lesson gone/cancelled in Ludus, or a duplicate left over from an earlier run.
-            service.events().delete(calendarId=cfg.calendar_id, eventId=ev["id"]).execute()
+            # Gone/cancelled at the source, or a duplicate left over from an earlier run.
+            service.events().delete(calendarId=calendar_id, eventId=ev["id"]).execute()
             result.deleted += 1
 
     for key, body in desired.items():
         ev = existing.get(key)
         if ev is None:
-            service.events().insert(calendarId=cfg.calendar_id, body=body).execute()
+            service.events().insert(calendarId=calendar_id, body=body).execute()
             result.created += 1
         elif _needs_update(ev, body):
-            service.events().patch(calendarId=cfg.calendar_id, eventId=ev["id"], body=body).execute()
+            service.events().patch(calendarId=calendar_id, eventId=ev["id"], body=body).execute()
             result.updated += 1
         else:
             result.unchanged += 1
-
-    log.info("Google Kalender: %s", result)
-    return result

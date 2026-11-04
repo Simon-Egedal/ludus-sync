@@ -32,6 +32,32 @@ class Config:
     network_wait_seconds: int = 300
 
 
+@dataclass
+class LessorConfig:
+    company: str
+    username: str
+    url: str = "https://workforce.lessor.dk/"
+    calendar_id: str = "primary"
+    timezone: str = "Europe/Copenhagen"
+    weeks_ahead: int = 8
+    # Google Calendar colorId for shifts; empty = the calendar's default colour.
+    color_id: str = ""
+    network_wait_seconds: int = 300
+
+
+def load_lessor_config(path: Path = CONFIG_PATH) -> LessorConfig:
+    """The [lessor] table in config.toml (calendar_id/timezone default to the top-level ones)."""
+    if not path.exists():
+        raise SystemExit(f"Mangler {path}. Kopiér config.example.toml til config.toml og udfyld den.")
+    with path.open("rb") as f:
+        raw = tomllib.load(f)
+    if "lessor" not in raw:
+        raise SystemExit(f"Mangler en [lessor]-sektion i {path}. Se config.example.toml.")
+    known = {f.name for f in fields(LessorConfig)}
+    inherited = {k: raw[k] for k in ("calendar_id", "timezone") if k in raw}
+    return LessorConfig(**{**inherited, **{k: v for k, v in raw["lessor"].items() if k in known}})
+
+
 def load_config(path: Path = CONFIG_PATH) -> Config:
     if not path.exists():
         raise SystemExit(f"Mangler {path}. Kopiér config.example.toml til config.toml og udfyld den.")

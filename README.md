@@ -52,3 +52,20 @@ I ugeskemaet har hver modul en CSS-klasse der fortæller typen:
 
 Lektier sættes på første modul i faget den dag. Hvis Ludus ændrer layout, gemmer
 `python -m ludus_sync discover` siderne i `%APPDATA%\ludus-sync\discover` til fejlsøgning.
+
+## Lessor Workforce (vagter)
+
+Et separat program (`ludus_sync/lessor.py`) lægger dine vagter fra Lessor Workforce i Google Kalender, 8 uger frem.
+Det logger ind på <https://workforce.lessor.dk/> med virksomhedsnavn, brugernavn og adgangskode og henter
+dit personlige iCal-link under **Profil → iCal** (kun "Vagter" skal være sat til). Linket gemmes, så senere
+kørsler bare henter kalenderen uden browser; holder linket op med at virke, logges der ind igen.
+
+1. Udfyld `[lessor]`-sektionen i `config.toml` (se `config.example.toml`).
+2. `.venv\Scripts\python -m ludus_sync.lessor setup` – gemmer Lessor-adgangskoden (eller brug `LESSOR_PASSWORD` i `.env`).
+3. Test: `.venv\Scripts\python -m ludus_sync.lessor sync`
+4. Kør `install_startup.ps1` igen – så oprettes også opgaven `LessorSync`.
+
+Vagterne lægges i den kalender `[lessor] calendar_id` peger på (fx din arbejdskalender) og mærkes
+separat, så de to programmer aldrig sletter hinandens begivenheder. Heldagsposter (ferie, fravær) springes over.
+Log: `%APPDATA%\ludus-sync\lessor.log`. Fejlsøgning: `python -m ludus_sync.lessor discover --headed`
+gemmer siderne i `%APPDATA%\ludus-sync\discover_lessor`.

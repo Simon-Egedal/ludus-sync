@@ -20,3 +20,13 @@ cancelled_keywords = ["aflyst"]
 # Moduler/begivenheder med disse ord kommer slet ikke i kalenderen
 skip_keywords = ["frivillig lektiecafe"]
 study_keywords = ["studietid", "studietime", "studiecafé", "studiecafe", "lektiecafé"]
+
+# --- Lessor Workforce (vagter) – bruges kun af: python -m ludus_sync.lessor ---
+[lessor]
+company = "virksomhedsnavn"
+username = "dit-lessor-brugernavn"
+# Kalender-ID på din arbejdskalender. Udelades den, bruges calendar_id fra ovenfor.
+calendar_id = "ARBEJDSKALENDER-ID@group.calendar.google.com"
+weeks_ahead = 8
+# Google-farve til vagter, fx 6 = Mandarin. Tom = kalenderens standardfarve.
+color_id = ""

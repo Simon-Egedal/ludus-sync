@@ -43,6 +43,17 @@ class ParseWeekTest(unittest.TestCase):
         self.assertEqual(tysk.room, "A135")
         self.assertIs(classify(tysk, *KW), LessonKind.STUDY)
 
+    def test_struck_teacher_is_studietime(self):
+        # Wednesday 04.11: 2L MAT shown as changed with the teacher crossed out, room unchanged.
+        raw = {**RAW_WEEK, "blocks": [
+            {"kind": "aendret-lektion", "left": "40%", "right": "40%",
+             "labels": ["2L MAT", "08:15 - 09:00", "", "K116", "MIHY"],
+             "struck": [False, False, False, False, True], "text": ""}]}
+        mat = parse_week(raw, TZ)[0]
+        self.assertEqual(mat.start.date(), date(2026, 11, 4))
+        self.assertEqual((mat.room, mat.teacher), ("K116", "MIHY (fraværende)"))
+        self.assertIs(classify(mat, *KW), LessonKind.STUDY)
+
     def test_cancelled(self):
         da = self.lessons["2L DA"]
         self.assertEqual(da.start.date(), date(2026, 11, 5))

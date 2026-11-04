@@ -2,6 +2,7 @@
 # og når du låser computeren op (fx efter dvale).
 # Kør:  powershell -ExecutionPolicy Bypass -File .\install_startup.ps1
 # Fjern: Unregister-ScheduledTask -TaskName LudusSync -Confirm:$false
+#        Unregister-ScheduledTask -TaskName LessorSync -Confirm:$false
 
 $ErrorActionPreference = "Stop"
 $projectDir = $PSScriptRoot
@@ -29,3 +30,12 @@ Register-ScheduledTask -TaskName "LudusSync" -Action $action -Trigger @($logon, 
     -Description "Synkroniserer Ludus-skema til Google Kalender" -Force | Out-Null
 
 Write-Host "Opgaven 'LudusSync' er oprettet og kører ved login og når computeren låses op."
+
+# Lessor-vagter er et separat program med sin egen opgave, hvis config.toml har en [lessor]-sektion.
+$configPath = Join-Path $projectDir "config.toml"
+if ((Test-Path $configPath) -and (Select-String -Path $configPath -Pattern '^\[lessor\]' -Quiet)) {
+    $lessorAction = New-ScheduledTaskAction -Execute $pythonw -Argument "-m ludus_sync.lessor sync" -WorkingDirectory $projectDir
+    Register-ScheduledTask -TaskName "LessorSync" -Action $lessorAction -Trigger @($logon, $unlock) -Settings $settings `
+        -Description "Synkroniserer Lessor-vagter til Google Kalender" -Force | Out-Null
+    Write-Host "Opgaven 'LessorSync' er oprettet og kører ved login og når computeren låses op."
+}
